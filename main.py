@@ -31,7 +31,7 @@ Let's make sure that we have access to GPU. We can use `nvidia-smi` command to d
 
 # !wget -q https://storage.googleapis.com/com-roboflow-marketing/trackers/assets/traffic_video_1.mp4
 
-SOURCE_VIDEO_PATH = "./input/bikes-1280x720-1.mp4"
+SOURCE_VIDEO_PATH = "./input/ok.mp4"
 
 """## Imports"""
 
@@ -40,12 +40,7 @@ from rfdetr import RFDETRBase
 from rfdetr.util.coco_classes import COCO_CLASSES
 from trackers import DeepSORTFeatureExtractor, DeepSORTTracker
 import numpy as np
-import pandas as pd
 import os
-import matplotlib.pyplot as plt
-from collections import defaultdict, Counter
-# Import the ReportGenerator
-from report_generator import ReportGenerator, generate_heatmap
 
 """## Track objects
 
@@ -95,67 +90,23 @@ def callback(frame, index):
     labels = [f"#{t_id} | {COCO_CLASSES[class_id]}" 
               for t_id, class_id in zip(detections.tracker_id, detections.class_id)]
 
-    # Update report data if the report generator exists
-    if hasattr(callback, 'report_generator') and callback.report_generator:
-        callback.report_generator.update(detections, index)
-
-    # Store detections for heatmap generation if needed
-    if hasattr(callback, 'detections_history') and callback.detections_history is not None:
-        callback.detections_history.append(detections)
-
     annotated_image = frame.copy()
     annotated_image = box_annotator.annotate(annotated_image, detections)
     annotated_image = label_annotator.annotate(annotated_image, detections, labels)
 
     return annotated_image
 
-TARGET_VIDEO_PATH = "./output/bikes-1280x720-1-result.mp4"
+TARGET_VIDEO_PATH = "./output/"+SOURCE_VIDEO_PATH.split("/")[-1]+".mp4"
 
-def process_video_with_report(generate_report=False, generate_heatmap_output=False, report_dir="./report"):
-    # Initialize report generator if needed
-    if generate_report:
-        callback.report_generator = ReportGenerator(COCO_CLASSES)
-    else:
-        callback.report_generator = None
-    
-    # Initialize detections history for heatmap if needed
-    if generate_heatmap_output:
-        callback.detections_history = []
-    else:
-        callback.detections_history = None
-    
+def process_video():
     # Process the video
-    frame_generator = sv.get_video_frames_generator(SOURCE_VIDEO_PATH)
-    # Get the first frame to determine dimensions for heatmap
-    for first_frame in frame_generator:
-        frame_shape = first_frame.shape[:2]  # (height, width)
-        break
-    
-    # Process video
     sv.process_video(
         source_path=SOURCE_VIDEO_PATH,
         target_path=TARGET_VIDEO_PATH,
         callback=callback,
-        max_frames=300,
+        max_frames=1000,
         show_progress=True,
     )
-    
-    # Generate report if requested
-    if generate_report and callback.report_generator:
-        report_path = callback.report_generator.generate_report(output_dir=report_dir)
-        print(f"Report generated: {report_path}")
-    
-    # Generate heatmap if requested
-    if generate_heatmap_output and callback.detections_history:
-        heatmap_path = generate_heatmap(
-            callback.detections_history, 
-            frame_shape, 
-            output_dir=report_dir
-        )
-        print(f"Heatmap generated: {heatmap_path}")
 
-# Run video processing with report generation enabled
-process_video_with_report(generate_report=True)
-
-# Example of how to run with different options:
-# process_video_with_report(generate_report=True, generate_heatmap_output=True, report_dir="./custom_report_directory")
+# Run video processing
+process_video()
