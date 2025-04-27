@@ -6,7 +6,6 @@ from trackers import DeepSORTFeatureExtractor, DeepSORTTracker
 from rfdetr import RFDETRBase
 from rfdetr.util.coco_classes import COCO_CLASSES
 import csv
-import time
 from collections import defaultdict
 
 # Set confidence threshold
