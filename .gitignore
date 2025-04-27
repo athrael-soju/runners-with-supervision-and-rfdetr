@@ -1,4 +1,5 @@
 .venv
 input
 output
+report
 __pycache__
