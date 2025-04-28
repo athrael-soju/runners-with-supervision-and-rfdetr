@@ -31,7 +31,7 @@ Let's make sure that we have access to GPU. We can use `nvidia-smi` command to d
 
 # !wget -q https://storage.googleapis.com/com-roboflow-marketing/trackers/assets/traffic_video_1.mp4
 
-SOURCE_VIDEO_PATH = "./input/VIDEO.mp4"
+SOURCE_VIDEO_PATH = "./input/1990.mp4"
 
 """## Imports"""
 
@@ -65,9 +65,16 @@ model = RFDETRBase(device="mps")
 CONFIDENCE_THRESHOLD = 0.5
 
 feature_extractor = DeepSORTFeatureExtractor.from_timm(
-    model_name="mobilenetv4_conv_small.e1200_r224_in1k"
+    model_name="convnext_base.fb_in1k"
 )
-tracker = DeepSORTTracker(feature_extractor=feature_extractor)
+
+tracker = DeepSORTTracker(
+    feature_extractor=feature_extractor,
+    # frame_rate=200,
+    # appearance_weight=0.8,
+    # appearance_threshold=0.65,
+    # lost_track_buffer=45,
+)
 
 """### Configure annotators"""
 
@@ -136,13 +143,13 @@ def process_video():
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"Created output directory: {output_dir}")
-    
+
     # Process the video
     sv.process_video(
         source_path=SOURCE_VIDEO_PATH,
         target_path=TARGET_VIDEO_PATH,
         callback=callback,
-        max_frames=5000,
+        max_frames=2000,
         show_progress=True,
     )
 
