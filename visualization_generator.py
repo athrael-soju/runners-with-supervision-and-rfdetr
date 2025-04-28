@@ -46,7 +46,7 @@ class ReportVisualizer:
         self.plot_object_timeline()
         self.plot_confidence_distribution()
 
-        print(f"Visualizations saved to {self.output_dir}")
+        print(f"Visualizations generated")
 
     def plot_objects_by_class(self):
         """Generate a bar chart of object counts by class"""

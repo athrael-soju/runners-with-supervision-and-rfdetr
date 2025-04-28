@@ -177,7 +177,6 @@ if __name__ == "__main__":
         else:
             try:
                 # If we've just generated reports, read from the reports folder
-                viz_dir = generate_visualizations("reports/report.json")
-                print(f"Visualizations have been generated in {viz_dir}")
+                generate_visualizations("reports/report.json")
             except Exception as e:
                 print(f"Error generating visualizations: {e}")
