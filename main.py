@@ -45,7 +45,7 @@ import argparse
 from report_generator import TrackingReporter, print_tracking_summary
 
 try:
-    from visualization import generate_visualizations
+    from visualization_generator import generate_visualizations
 
     visualization_available = True
 except ImportError:
