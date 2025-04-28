@@ -4,3 +4,4 @@ output
 reports
 visualizations
 __pycache__
+rf-detr-base.pth
