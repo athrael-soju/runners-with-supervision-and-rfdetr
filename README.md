@@ -1,103 +1,94 @@
-# Object Tracking with SORT
+# Object Tracking System
 
-This project uses SORT (Simple Online and Realtime Tracking) to track objects in videos. It leverages the RF-DETR model for object detection and DeepSORT for tracking.
+An advanced object tracking system that uses the SORT (Simple Online and Realtime Tracking) algorithm to detect and track objects in videos. The system leverages RF-DETR for object detection and DeepSORT for tracking, providing robust object tracking capabilities with detailed reporting and visualization.
 
 ## Features
 
-- **Object Detection**: Detect objects in video frames using RF-DETR
-- **Object Tracking**: Track detected objects across frames using DeepSORT
-- **Video Generation**: Create annotated videos with bounding boxes and track IDs
-- **Report Generation**: Generate detailed tracking reports with object metrics
-- **Visualization**: Create data visualizations from tracking reports
+- **Object Detection**: Uses RF-DETR model to identify objects in video frames
+- **Object Tracking**: Implements DeepSORT tracking algorithm for consistent tracking across frames
+- **Reporting**: Generates detailed reports with tracking statistics
+- **Visualization**: Creates insightful visualizations of tracking data
+- **Real-time Processing**: Designed for efficient processing of video streams
+
+## Requirements
+
+- Python 3.7+
+- PyTorch
+- OpenCV
+- NumPy
+- Matplotlib
+- Seaborn
+- Pandas
 
 ## Installation
 
-1. Clone this repository
-2. Install dependencies:
-   ```
-   pip install supervision trackers rfdetr
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/trackers.git
+cd trackers
 
-3. For visualization support, install additional dependencies:
-   ```
-   pip install matplotlib seaborn opencv-python pandas
-   ```
+# Create a virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -U git+https://github.com/roboflow/rf-detr.git
+pip install -U git+https://github.com/roboflow/trackers.git
+pip install -U git+https://github.com/roboflow/supervision.git
+pip install matplotlib seaborn pandas
+```
 
 ## Usage
 
 ### Basic Usage
 
-To process a video with tracking and generate an output video:
-
 ```bash
 python main.py
 ```
 
-### Generate Reports
-
-To process a video and generate detailed tracking reports:
+### Advanced Usage
 
 ```bash
+# Generate tracking reports
 python main.py --report
-```
 
-This will create two types of reports in the `reports` directory:
-- A CSV summary report with basic tracking statistics
-- A detailed JSON report with comprehensive tracking data
+# Generate visualizations
+python main.py --visualize
 
-### Generate Visualizations
-
-To generate data visualizations based on tracking results:
-
-```bash
+# Generate both reports and visualizations
 python main.py --report --visualize
 ```
 
-This will create several visualization charts in the `reports/visualizations` directory:
-- Object counts by class (bar chart)
-- Tracking duration distribution (histogram)
-- Object appearance timeline
-- Detection density heatmap
-- Confidence score distribution by class
-- Object trajectory map
+## Project Structure
 
-### Skip Video Generation
+- `main.py`: Main script for object detection and tracking
+- `report_generator.py`: Generates tracking reports and statistics
+- `visualization_generator.py`: Creates visualizations from tracking data
+- `input/`: Directory containing input videos
+- `reports/`: Directory containing generated reports
+- `visualizations/`: Directory containing generated visualizations
 
-If you only want to generate reports/visualizations without creating an output video:
+## Reports
 
-```bash
-python main.py --report --visualize --no-video
-```
+The system generates two types of reports:
+- **Summary CSV**: Basic statistics on each tracked object
+- **Detailed JSON**: Comprehensive tracking data for further analysis
 
-## Report Details
+## Visualizations
 
-The generated reports include the following information for each tracked object:
+Four types of visualizations are generated:
+- **Objects by Class**: Bar chart showing object counts by class
+- **Tracking Duration Histogram**: Distribution of how long objects are tracked
+- **Object Timeline**: Timeline showing when objects appear in the video
+- **Confidence Distribution**: Distribution of confidence scores by class
 
-- **Track ID**: Unique identifier for each tracked object
-- **Class**: The detected object class (from COCO classes)
-- **First Seen**: Frame number when the object was first detected
-- **Last Seen**: Frame number when the object was last detected
-- **Duration**: How long the object was tracked (in frames and seconds)
-- **Confidence**: Average confidence score for detections
+## Examples
 
-The detailed JSON report includes additional metrics such as:
-- Min/max confidence scores
-- Formatted duration in hours:minutes:seconds
-- Full video metadata
+After processing a video, you can find:
+- The processed video with tracking annotations in the `output/` directory
+- Reports in the `reports/` directory
+- Visualizations in the `visualizations/` directory
 
-## Visualization Types
+## License
 
-The following visualizations are generated:
-
-1. **Objects by Class**: Bar chart showing count of unique objects detected for each class
-2. **Duration Histogram**: Distribution of how long objects were tracked
-3. **Object Timeline**: Timeline showing when each object appears in the video
-4. **Detection Heatmap**: Heatmap showing where in the frame objects are most frequently detected
-5. **Confidence Distribution**: Distribution of confidence scores by object class
-6. **Trajectory Map**: Visualization of object movement paths through the video
-
-## Customization
-
-You can modify the following parameters in the code:
-- `SOURCE_VIDEO_PATH`: Path to the input video
-- `CONFIDENCE_THRESHOLD`: Minimum confidence score for detections (default: 0.5) 
+[MIT License](LICENSE) 

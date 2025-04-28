@@ -127,16 +127,22 @@ def callback(frame, index):
     return annotated_image
 
 
-TARGET_VIDEO_PATH = "./output/" + SOURCE_VIDEO_PATH.split("/")[-1] + ".mp4"
+TARGET_VIDEO_PATH = "./output/" + SOURCE_VIDEO_PATH.split("/")[-1]
 
 
 def process_video():
+    # Create output directory if it doesn't exist
+    output_dir = os.path.dirname(TARGET_VIDEO_PATH)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"Created output directory: {output_dir}")
+    
     # Process the video
     sv.process_video(
         source_path=SOURCE_VIDEO_PATH,
         target_path=TARGET_VIDEO_PATH,
         callback=callback,
-        max_frames=1000,
+        max_frames=5000,
         show_progress=True,
     )
 

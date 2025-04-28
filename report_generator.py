@@ -81,7 +81,7 @@ class TrackingReporter:
     def generate_reports(self):
         """Generate various reports based on collected tracking data"""
         # Generate summary report
-        self._generate_summary_report(f"{self.reports_dir}/_summary.csv")
+        self._generate_summary_report(f"{self.reports_dir}/summary.csv")
 
         # Generate detailed JSON report
         self._generate_detailed_report(f"{self.reports_dir}/report.json")
