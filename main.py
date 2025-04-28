@@ -31,7 +31,7 @@ Let's make sure that we have access to GPU. We can use `nvidia-smi` command to d
 
 # !wget -q https://storage.googleapis.com/com-roboflow-marketing/trackers/assets/traffic_video_1.mp4
 
-SOURCE_VIDEO_PATH = "./input/ok.mp4"
+SOURCE_VIDEO_PATH = "./input/VIDEO.mp4"
 
 """## Imports"""
 

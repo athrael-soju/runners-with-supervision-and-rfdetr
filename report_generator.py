@@ -80,6 +80,11 @@ class TrackingReporter:
 
     def generate_reports(self):
         """Generate various reports based on collected tracking data"""
+        # Ensure reports directory exists before generating reports
+        if not os.path.exists(self.reports_dir):
+            os.makedirs(self.reports_dir)
+            print(f"Created reports directory: {self.reports_dir}")
+            
         # Generate summary report
         self._generate_summary_report(f"{self.reports_dir}/summary.csv")
 
@@ -90,6 +95,9 @@ class TrackingReporter:
 
     def _generate_summary_report(self, filepath):
         """Generate a CSV summary report with basic tracking statistics"""
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
         with open(filepath, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(
@@ -127,6 +135,9 @@ class TrackingReporter:
 
     def _generate_detailed_report(self, filepath):
         """Generate a detailed JSON report with full tracking data"""
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
         report_data = {
             "video_info": {
                 "filename": self.video_name,
