@@ -1,5 +1,6 @@
 .venv
 input
 output
-report
+reports
+visualizations
 __pycache__

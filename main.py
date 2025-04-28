@@ -41,6 +41,18 @@ from rfdetr.util.coco_classes import COCO_CLASSES
 from trackers import DeepSORTFeatureExtractor, DeepSORTTracker
 import numpy as np
 import os
+import argparse
+from report_generator import TrackingReporter, print_tracking_summary
+
+try:
+    from visualization import generate_visualizations
+
+    visualization_available = True
+except ImportError:
+    visualization_available = False
+    print(
+        "Visualization module not available. Install matplotlib, seaborn, and opencv-python to enable."
+    )
 
 """## Track objects
 
@@ -59,22 +71,34 @@ tracker = DeepSORTTracker(feature_extractor=feature_extractor)
 
 """### Configure annotators"""
 
-color = sv.ColorPalette.from_hex([
-    "#ffff00", "#ff9b00", "#ff8080", "#ff66b2", "#ff66ff", "#b266ff",
-    "#9999ff", "#3399ff", "#66ffff", "#33ff99", "#66ff66", "#99ff00"
-])
+color = sv.ColorPalette.from_hex(
+    [
+        "#ffff00",
+        "#ff9b00",
+        "#ff8080",
+        "#ff66b2",
+        "#ff66ff",
+        "#b266ff",
+        "#9999ff",
+        "#3399ff",
+        "#66ffff",
+        "#33ff99",
+        "#66ff66",
+        "#99ff00",
+    ]
+)
 
-box_annotator = sv.BoxAnnotator(
-    color=color,
-    color_lookup=sv.ColorLookup.TRACK)
+box_annotator = sv.BoxAnnotator(color=color, color_lookup=sv.ColorLookup.TRACK)
 
 label_annotator = sv.LabelAnnotator(
     color=color,
     color_lookup=sv.ColorLookup.TRACK,
     text_color=sv.Color.BLACK,
-    text_scale=1.0)
+    text_scale=1.0,
+)
 
 """### Run detection + tracking"""
+
 
 def callback(frame, index):
     # Obtain bounding box predictions from RF-DETR
@@ -86,9 +110,15 @@ def callback(frame, index):
     # Filter out detections with IDs of -1 (fresh tracks not yet confirmed)
     detections = detections[detections.tracker_id != -1]
 
+    # Update tracking reporter if enabled
+    if "reporter" in globals() and reporter is not None:
+        reporter.update(detections, index)
+
     # Add COCO class names to labels
-    labels = [f"#{t_id} | {COCO_CLASSES[class_id]}" 
-              for t_id, class_id in zip(detections.tracker_id, detections.class_id)]
+    labels = [
+        f"#{t_id} | {COCO_CLASSES[class_id]}"
+        for t_id, class_id in zip(detections.tracker_id, detections.class_id)
+    ]
 
     annotated_image = frame.copy()
     annotated_image = box_annotator.annotate(annotated_image, detections)
@@ -96,7 +126,9 @@ def callback(frame, index):
 
     return annotated_image
 
-TARGET_VIDEO_PATH = "./output/"+SOURCE_VIDEO_PATH.split("/")[-1]+".mp4"
+
+TARGET_VIDEO_PATH = "./output/" + SOURCE_VIDEO_PATH.split("/")[-1] + ".mp4"
+
 
 def process_video():
     # Process the video
@@ -108,5 +140,44 @@ def process_video():
         show_progress=True,
     )
 
-# Run video processing
-process_video()
+
+if __name__ == "__main__":
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Object tracking with SORT")
+    parser.add_argument(
+        "--report", action="store_true", help="Generate tracking reports"
+    )
+    parser.add_argument(
+        "--visualize",
+        action="store_true",
+        help="Generate visualizations for tracking data",
+    )
+    args = parser.parse_args()
+
+    # Initialize reporter if reports or visualizations are requested
+    reporter = None
+    if args.report or args.visualize:
+        reporter = TrackingReporter(SOURCE_VIDEO_PATH)
+
+    # Process the video
+    process_video()
+
+    # Generate reports if requested
+    if args.report:
+        reporter.generate_reports()
+        print_tracking_summary(reporter)
+
+    # Generate visualizations if requested
+    if args.visualize:
+        if not visualization_available:
+            print("ERROR: Visualization module not available.")
+            print(
+                "Please install required dependencies: pip install matplotlib seaborn pandas"
+            )
+        else:
+            try:
+                # If we've just generated reports, read from the reports folder
+                viz_dir = generate_visualizations("reports/report.json")
+                print(f"Visualizations have been generated in {viz_dir}")
+            except Exception as e:
+                print(f"Error generating visualizations: {e}")
