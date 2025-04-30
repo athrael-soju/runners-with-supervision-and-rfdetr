@@ -31,7 +31,7 @@ Let's make sure that we have access to GPU. We can use `nvidia-smi` command to d
 
 # !wget -q https://storage.googleapis.com/com-roboflow-marketing/trackers/assets/traffic_video_1.mp4
 
-SOURCE_VIDEO_PATH = "./input/1990.mp4"
+SOURCE_VIDEO_PATH = "./input/t1.mp4"
 
 """## Imports"""
 
@@ -59,7 +59,7 @@ except ImportError:
 ### Initiate detector and tracker
 """
 
-model = RFDETRBase(device="mps")
+model = RFDETRBase(device="cuda")
 
 # Set confidence threshold
 CONFIDENCE_THRESHOLD = 0.5
@@ -144,12 +144,23 @@ def process_video():
         os.makedirs(output_dir)
         print(f"Created output directory: {output_dir}")
 
-    # Process the video
+    # Check video frame count first
+    import cv2
+    video = cv2.VideoCapture(SOURCE_VIDEO_PATH)
+    if not video.isOpened():
+        raise Exception(f"Could not open video file: {SOURCE_VIDEO_PATH}")
+    
+    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+    video.release()
+    
+    print(f"Total frames in video: {total_frames}")
+    
+    # Process the video with correct frame count
     sv.process_video(
         source_path=SOURCE_VIDEO_PATH,
         target_path=TARGET_VIDEO_PATH,
         callback=callback,
-        max_frames=2000,
+        max_frames=total_frames,  # Use actual frame count
         show_progress=True,
     )
 
