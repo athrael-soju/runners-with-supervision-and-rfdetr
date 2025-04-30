@@ -31,18 +31,16 @@ Let's make sure that we have access to GPU. We can use `nvidia-smi` command to d
 
 # !wget -q https://storage.googleapis.com/com-roboflow-marketing/trackers/assets/traffic_video_1.mp4
 
-SOURCE_VIDEO_PATH = "./input/t1.mp4"
+SOURCE_VIDEO_PATH = "./input/skater_boys.mp4"
 
 """## Imports"""
 
-import supervision as sv
 from rfdetr import RFDETRBase
 from rfdetr.util.coco_classes import COCO_CLASSES
 from trackers import DeepSORTFeatureExtractor, DeepSORTTracker
-import numpy as np
-import os
 import argparse
 from report_generator import TrackingReporter, print_tracking_summary
+from processor import VideoProcessor
 
 try:
     from visualization_generator import generate_visualizations
@@ -53,117 +51,6 @@ except ImportError:
     print(
         "Visualization module not available. Install matplotlib, seaborn, and opencv-python to enable."
     )
-
-"""## Track objects
-
-### Initiate detector and tracker
-"""
-
-model = RFDETRBase(device="cuda")
-
-# Set confidence threshold
-CONFIDENCE_THRESHOLD = 0.5
-
-feature_extractor = DeepSORTFeatureExtractor.from_timm(
-    model_name="convnext_base.fb_in1k"
-)
-
-tracker = DeepSORTTracker(
-    feature_extractor=feature_extractor,
-    # frame_rate=200,
-    # appearance_weight=0.8,
-    # appearance_threshold=0.65,
-    # lost_track_buffer=45,
-)
-
-"""### Configure annotators"""
-
-color = sv.ColorPalette.from_hex(
-    [
-        "#ffff00",
-        "#ff9b00",
-        "#ff8080",
-        "#ff66b2",
-        "#ff66ff",
-        "#b266ff",
-        "#9999ff",
-        "#3399ff",
-        "#66ffff",
-        "#33ff99",
-        "#66ff66",
-        "#99ff00",
-    ]
-)
-
-box_annotator = sv.BoxAnnotator(color=color, color_lookup=sv.ColorLookup.TRACK)
-
-label_annotator = sv.LabelAnnotator(
-    color=color,
-    color_lookup=sv.ColorLookup.TRACK,
-    text_color=sv.Color.BLACK,
-    text_scale=1.0,
-)
-
-"""### Run detection + tracking"""
-
-
-def callback(frame, index):
-    # Obtain bounding box predictions from RF-DETR
-    detections = model.predict(frame, threshold=CONFIDENCE_THRESHOLD)
-
-    # Update tracker with new detections and retrieve updated IDs
-    detections = tracker.update(detections, frame)
-
-    # Filter out detections with IDs of -1 (fresh tracks not yet confirmed)
-    detections = detections[detections.tracker_id != -1]
-
-    # Update tracking reporter if enabled
-    if "reporter" in globals() and reporter is not None:
-        reporter.update(detections, index)
-
-    # Add COCO class names to labels
-    labels = [
-        f"#{t_id} | {COCO_CLASSES[class_id]}"
-        for t_id, class_id in zip(detections.tracker_id, detections.class_id)
-    ]
-
-    annotated_image = frame.copy()
-    annotated_image = box_annotator.annotate(annotated_image, detections)
-    annotated_image = label_annotator.annotate(annotated_image, detections, labels)
-
-    return annotated_image
-
-
-TARGET_VIDEO_PATH = "./output/" + SOURCE_VIDEO_PATH.split("/")[-1]
-
-
-def process_video():
-    # Create output directory if it doesn't exist
-    output_dir = os.path.dirname(TARGET_VIDEO_PATH)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"Created output directory: {output_dir}")
-
-    # Check video frame count first
-    import cv2
-    video = cv2.VideoCapture(SOURCE_VIDEO_PATH)
-    if not video.isOpened():
-        raise Exception(f"Could not open video file: {SOURCE_VIDEO_PATH}")
-    
-    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    video.release()
-    
-    print(f"Total frames in video: {total_frames}")
-    
-    # Process the video with correct frame count
-    sv.process_video(
-        source_path=SOURCE_VIDEO_PATH,
-        target_path=TARGET_VIDEO_PATH,
-        callback=callback,
-        max_frames=total_frames,  # Use actual frame count
-        show_progress=True,
-    )
-
 
 if __name__ == "__main__":
     # Parse command line arguments
@@ -176,15 +63,63 @@ if __name__ == "__main__":
         action="store_true",
         help="Generate visualizations for tracking data",
     )
+    parser.add_argument(
+        "--seconds", type=float, help="Number of seconds to process from the video"
+    )
+    parser.add_argument("--fps", type=float, help="Output FPS for the processed video")
+    parser.add_argument(
+        "--start_frame", type=int, help="Start frame for processing the video"
+    )
+    parser.add_argument(
+        "--low_fps", action="store_true", help="Optimize tracking for low FPS videos"
+    )
     args = parser.parse_args()
+
+    # Initialize detector
+    model = RFDETRBase(device="cuda")
+    model.classes_dict = COCO_CLASSES
+
+    # Initialize feature extractor for DeepSORT
+    feature_extractor = DeepSORTFeatureExtractor.from_timm(
+        model_name="convnext_base.fb_in1k"
+    )
+
+    # Initialize tracker with appropriate settings
+    if args.low_fps:
+        print("Using low FPS optimized tracking settings")
+        tracker = DeepSORTTracker(
+            feature_extractor=feature_extractor,
+            lost_track_buffer=60,  # Increase frames to buffer when a track is lost
+            frame_rate=1,  # Set a low frame rate expectation
+            track_activation_threshold=0.5,  # Lower threshold to activate tracks
+            minimum_consecutive_frames=2,  # Fewer frames to confirm a track
+            minimum_iou_threshold=0.3,  # Lower IOU requirement for matching
+            appearance_threshold=0.8,  # Higher tolerance for appearance differences
+            appearance_weight=0.75,  # Prioritize appearance over motion
+            distance_metric="cosine",  # Use cosine distance for appearance
+        )
+    else:
+        # Default tracker settings for normal FPS
+        tracker = DeepSORTTracker(feature_extractor=feature_extractor)
 
     # Initialize reporter if reports or visualizations are requested
     reporter = None
     if args.report or args.visualize:
         reporter = TrackingReporter(SOURCE_VIDEO_PATH)
 
+    # Initialize video processor
+    processor = VideoProcessor(
+        source_path=SOURCE_VIDEO_PATH,
+        model=model,
+        tracker=tracker,
+        confidence_threshold=0.5,
+        reporter=reporter,
+    )
+
     # Process the video
-    process_video()
+    processor.process_video(
+        seconds=args.seconds, output_fps=args.fps, start_frame=args.start_frame
+    )
 
     # Generate reports if requested
     if args.report:
